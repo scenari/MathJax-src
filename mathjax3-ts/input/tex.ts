@@ -152,8 +152,8 @@ export class TeX<N, T, D> extends AbstractInputJax<N, T, D> {
     let node: MmlNode;
     let parser: TexParser;
     let display = math.display;
-    this.latex = math.math;
     this.executeFilters(this.preFilters, math, this.parseOptions);
+    this.latex = math.math;
     try {
       parser = new TexParser(this.latex,
                              {display: display, isInner: false},
