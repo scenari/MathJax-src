@@ -1,6 +1,10 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]; then 
+    # Bussproofs package
+    node load.js tests/parser-bussproofs-reginf-tests.js
+    node load.js tests/parser-bussproofs-regproofs-tests.js
+    exit 0
     node load.js tests/parser-base-tests.js
     node load.js tests/parser-digits-tests.js
     node load.js tests/parser-digits-european-tests.js
@@ -12,6 +16,9 @@ if [ $# -eq 0 ]; then
     node load.js tests/parser-array-tests.js
     node load.js tests/parser-error-tests.js
     node load.js tests/parser-complex-tests.js
+    node load.js tests/parser-internal-math-tests.js
+
+    # AMS package tests.
     node load.js tests/parser-ams-tests.js
     node load.js tests/parser-amsenv-tests.js
     node load.js tests/parser-amserror-tests.js
@@ -31,6 +38,10 @@ if [ $# -eq 0 ]; then
     node load.js tests/parser-boldsymbol-tests.js
     node load.js tests/parser-newcommand-tests.js
     node load.js tests/parser-ncerrors-tests.js
+
+    # Bussproofs package
+    node load.js tests/parser-bussproofs-reginf-tests.js
+    node load.js tests/parser-bussproofs-regproofs-tests.js
     exit 0
 else
     repeat=$1
