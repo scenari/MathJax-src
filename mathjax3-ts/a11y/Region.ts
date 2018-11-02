@@ -24,7 +24,7 @@
 
 
 import {HTMLDocument} from '../handlers/html/HTMLDocument.js';
-import {CssStyles, StyleList} from '../output/chtml/CssStyles.js';
+import {CssStyles, StyleList} from '../output/common/CssStyles.js';
 
 import 'speech-rule-engine/lib/sre_browser.js';
 
