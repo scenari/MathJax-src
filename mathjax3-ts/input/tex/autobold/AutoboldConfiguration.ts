@@ -25,6 +25,7 @@
 import {Configuration} from '../Configuration.js';
 import {HTMLMathItem} from '../../../handlers/html/HTMLMathItem.js';
 import ParseOptions from '../ParseOptions.js';
+import {BoldsymbolConfiguration} from '../boldsymbol/BoldsymbolConfiguration.js';
 
 
 let addBoldsymbol = function(data: {math: any, configuration: ParseOptions}) {
