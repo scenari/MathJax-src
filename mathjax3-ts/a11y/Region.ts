@@ -285,13 +285,34 @@ export class LiveRegion extends AbstractRegion {
   }
 
 
+  // protected position(node: HTMLElement) {
+  //   const rect = node.getBoundingClientRect();
+  //   const bot = rect.bottom + 10 + window.pageYOffset;
+  //   const left = rect.left + window.pageXOffset;
+  //   this.div.style.top = bot + 'px';
+  //   this.div.style.left = left + 'px';
+  // }
+
   protected position(node: HTMLElement) {
     const rect = node.getBoundingClientRect();
-    const bot = rect.bottom + 10 + window.pageYOffset;
-    const left = rect.left + window.pageXOffset;
+    let baseBottom = 0;
+    let baseLeft = Number.POSITIVE_INFINITY;
+    let tooltips = this.document.adaptor.document.getElementsByClassName(this.CLASS.className + '_Show');
+    for (let i = 0, tooltip; tooltip = tooltips[i]; i++) {
+      if (tooltip !== this.div) {
+        baseBottom = Math.max(tooltip.getBoundingClientRect().bottom, baseBottom);
+        baseLeft = Math.min(tooltip.getBoundingClientRect().left, baseLeft);
+      }
+    }
+    // Get all the shown tooltips and then put at the bottom. One of which is
+    // the element itself!
+    const bot = (baseBottom ? baseBottom : rect.bottom + 10) + window.pageYOffset;
+    const left = (baseLeft < Number.POSITIVE_INFINITY ? baseLeft : rect.left) + window.pageXOffset;
     this.div.style.top = bot + 'px';
     this.div.style.left = left + 'px';
   }
+
+
 
   protected highlight(highlighter: sre.Highlighter) {
     const color = highlighter.colorString();

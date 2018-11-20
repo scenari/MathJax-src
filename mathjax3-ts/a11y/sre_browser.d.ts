@@ -27,6 +27,12 @@ declare namespace sre {
     getNodes(): Node[];
   }
   
+  interface SpeechRuleEngine {
+    runInSetting(setting: any, callback: () => string): string;
+    evaluateNode(node: Element): string;
+  }
+
+
   interface Walker {
     activate(): void;
     speech(): string;
@@ -58,6 +64,11 @@ declare namespace sre {
 declare namespace sre.Engine {
   export function isReady(): boolean;
 }
+
+declare namespace sre.SpeechRuleEngine {
+  export function getInstance(): SpeechRuleEngine;
+}
+
 
 declare namespace sre.HighlighterFactory {
 

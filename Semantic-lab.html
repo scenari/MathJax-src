@@ -18,6 +18,11 @@
   text-align: right;
 }
 </style>
+<style>
+mjx-mtable * {
+background-color: inherit;
+}
+</style>
 </head>
 <body>
 
@@ -28,6 +33,28 @@
 </span><input type="button" value="Keep" onclick="Lab.Keep()" />
 <input type="button" value="Typeset" onclick="Lab.Typeset()" />
 </div>
+<p>
+Examples: <select onchange="Lab.Select(this.value)" id="example">
+  <option value="0">(Select one)</option>
+  <option value="-">----------------</option>
+  <option value="1">Quadratic Formula</option>
+  <option value="2">Cauchy-Schwarz Inequality</option>
+  <option value="3">An Identity of Ramanujan</option>
+  <option value="4">A Rogers-Ramanujan Identity</option>
+  <option value="5">A Summation Formula</option>
+  <option value="6">Cauchy's Integral Formula</option>
+  <option value="7">Standard Deviation</option>
+  <option value="8">Proof Tree</option>
+</select>
+
+<label><small>Speech:</small>
+<select id="speech" onchange="Lab.resetSpeech(this.value)">
+<option value="mathspeak">Mathspeak</option>
+<option value="clearspeak">Clearspeak</option>
+<option value="nemeth">Nemeth</option>
+</select></label>
+<input type="checkbox" id="magnifier">Magnifier</input>
+<br/>
 <p>
 <div id="package"></div>
 <p>

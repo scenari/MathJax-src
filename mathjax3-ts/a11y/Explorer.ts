@@ -205,7 +205,7 @@ export class SpeechExplorer extends AbstractKeyExplorer implements KeyExplorer {
   protected highlighter: sre.Highlighter;
   private speechGenerator: sre.SpeechGenerator;
   private foreground: sre.colorType = {color: 'red', alpha: 1};
-  private background: sre.colorType = {color: 'blue', alpha: .2};
+  private background: sre.colorType = {color: 'lightblue', alpha: .2};
 
   // /**
   //  * @override
@@ -293,6 +293,22 @@ export class SpeechExplorer extends AbstractKeyExplorer implements KeyExplorer {
 
 }
 
+
+export class BrailleExplorer extends SpeechExplorer {
+
+  public Speech(walker: any) {
+    if (sre.Engine.isReady()) {
+      return sre.SpeechRuleEngine.getInstance().runInSetting(
+        {'locale': 'nemeth', 'domain': 'default'},
+        function() {return walker.speech(); }
+      );
+    } else {
+      setTimeout(
+        function() { this.Speech(walker); }.bind(this), 100);
+    }
+  }
+  
+}
 
 // Reimplement without speech and proper setting of region.
 export class Magnifier extends SpeechExplorer {
