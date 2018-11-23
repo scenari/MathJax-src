@@ -46,6 +46,16 @@ let addBoldsymbol = function(data: {math: any, configuration: ParseOptions}) {
 };
 
 
+/**
+ * Init method for Autobold package. Loads boldsymbol.
+ * @param {Configuration} config The current configuration.
+ */
+let init = function(config: Configuration) {
+  config.append(BoldsymbolConfiguration);
+};
+
+
 export const AutoboldConfiguration = Configuration.create(
-  'autobold', {preprocessors: [addBoldsymbol]}
+  'autobold', {preprocessors: [addBoldsymbol],
+               init: init}
 );
