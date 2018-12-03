@@ -158,14 +158,6 @@ let OLD = false;
 // left: left space + left label
 // 
 let getSpacesOld = function(inf: MmlNode, table: MmlNode, right: boolean = false): number {
-  console.log('Getting space');
-  console.log(right ? 'right' : 'left');
-  console.log('Table');
-  console.log(table);
-  console.log(table.getAllProperties());
-  console.log('Inf');
-  console.log(inf);
-  console.log(inf.getAllProperties());
   if (inf === table) {
     return 0;
   }
@@ -174,7 +166,6 @@ let getSpacesOld = function(inf: MmlNode, table: MmlNode, right: boolean = false
   let result = (right ? inf.childNodes.slice(index + 1) : inf.childNodes.slice(0, index))
     .map(getBBox)
     .reduce((x, y) => { return x + y; }, 0);
-  console.log('Get spaces result: ' + result);
   return result;
 };
 
@@ -184,39 +175,26 @@ let getSpacesOld = function(inf: MmlNode, table: MmlNode, right: boolean = false
 // left: left space + left label
 // 
 let getSpacesNew = function(inf: MmlNode, table: MmlNode, right: boolean = false): number {
-  console.log('Getting space');
-  console.log(right ? 'right' : 'left');
-  console.log('Table');
-  console.log(table);
-  console.log(table.getAllProperties());
-  console.log('Inf');
-  console.log(inf);
-  console.log(inf.getAllProperties());
   let result = 0;
   if (inf === table) {
-    console.log(74);
     return result;
   }
   if (inf !== table.parent) {
     let children = inf.childNodes as MmlNode[];
     let index = right ? children.length - 1 : 0;
     if (NodeUtil.isType(children[index], 'mspace')) {
-      console.log(76);
       result += getBBox(children[index]);
     }
     inf = table.parent;
   }
   if (inf === table) {
-    console.log(77);
     return result;
   }
   let children = inf.childNodes as MmlNode[];
   let index = right ? children.length - 1 : 0;
   if (children[index] !== table) {
-    console.log(78);
     result += getBBox(children[index]);
   }
-  console.log('Get spaces result: ' + result);
   return result;
 };
 
@@ -236,8 +214,6 @@ let adjustValue = function(inf: MmlNode, right: boolean = false): number {
 
 let addSpaceNew = function(config: ParseOptions, inf: MmlNode,
                         space: number, right: boolean = false) {
-  console.log(inf);
-  console.log(NodeUtil.isType(inf, 'mrow'));
   if (getProperty(inf, 'inferenceRule') ||
       getProperty(inf, 'labelledRule')) {
     const mrow = config.nodeFactory.create('node', 'mrow');
@@ -269,8 +245,6 @@ let addSpaceNew = function(config: ParseOptions, inf: MmlNode,
 
 let addSpaceOld = function(config: ParseOptions, inf: MmlNode,
                         space: number, right: boolean = false) {
-  console.log(inf);
-  console.log(NodeUtil.isType(inf, 'mrow'));
   // if (getProperty(inf, 'inference')) {
   //   const mrow = config.nodeFactory.create('node', 'mrow');
   //   inf.parent.replaceChild(mrow, inf);
