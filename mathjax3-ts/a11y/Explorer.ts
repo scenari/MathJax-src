@@ -4,7 +4,8 @@ import {OptionList} from '../util/Options.js';
 import {A11yDocument, HoverRegion, Region, ToolTip} from './Region.js';
 
 // import 'node_modules/speech-rule-engine/lib/sre_browser.js';
-import 'speech-rule-engine/lib/sre_browser.js';
+// import 'speech-rule-engine/lib/sre_browser.js';
+import 'lib/sre_browser.js';
 
 
 export interface Explorer {
