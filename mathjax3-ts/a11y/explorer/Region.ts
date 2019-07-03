@@ -476,13 +476,34 @@ export class HoverRegion extends AbstractRegion<HTMLElement> {
         //
         if (mjx.nodeName === 'svg') {
           (mjx.firstChild as HTMLElement).setAttribute('transform', 'matrix(1 0 0 -1 0 0)');
-          const W = parseFloat(mjx.getAttribute('viewBox').split(/ /)[2]);
-          const w = parseFloat(mjx.getAttribute('width'));
-          const {x, y, width, height} = (node as any).getBBox();
-          mjx.setAttribute('viewBox', [x, -(y + height), width, height].join(' '));
+          const viewbox = mjx.getAttribute('viewBox');
+          if (viewbox) {
+            const w = parseFloat(mjx.getAttribute('width'));
+            
+            const {x, y, width, height} = (node as any).getBBox();
+            const W = parseFloat(viewbox.split(/ /)[2]);
+            mjx.setAttribute('viewBox', [x, -(y + height), width, height].join(' '));
+            mjx.setAttribute('width', (w / W * width) + 'ex');
+            mjx.setAttribute('height', (w / W * height) + 'ex');
+          } else {
+            console.log(mjx);
+            const w = parseFloat(mjx.getAttribute('width'));
+            const {x, y, width, height} = (node as any).getBBox();
+            let subs = mjx.getElementsByTagName('svg');
+            console.log(subs[0]);
+            console.log(subs[1]);
+            
+            const W1 = parseFloat(subs[0].getAttribute('viewBox').split(/ /)[2]);
+            const W2 = parseFloat(subs[1].getAttribute('viewBox').split(/ /)[2]);
+            const W = W2;
+            mjx.setAttribute('viewBox', [x, -(y + height), width, height].join(' '));
+            mjx.setAttribute('width', (w / W * width) + 'ex');
+            mjx.setAttribute('height', (w / W * height) + 'ex');
+            // mjx.setAttribute('width', '100%');
+            // (mjx.firstChild as HTMLElement).setAttribute('transform', 'matrix(1 0 0 -1 0 0) scale(.025339) translate(0, -1465)');
+            // // mjx.setAttribute('height', (w / W * height) + 'ex');
+          }
           mjx.removeAttribute('style');
-          mjx.setAttribute('width', (w / W * width) + 'ex');
-          mjx.setAttribute('height', (w / W * height) + 'ex');
           container.setAttribute('sre-highlight', 'false');
         }
       }
