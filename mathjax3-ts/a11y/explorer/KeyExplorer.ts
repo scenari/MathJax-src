@@ -210,7 +210,9 @@ export class SpeechExplorer extends AbstractKeyExplorer<string> {
    */
   public Update(force: boolean = false) {
     super.Update(force);
-    this.region.Update(this.walker.speech());
+    if (this.active) {
+      this.region.Update(this.walker.speech());
+    }
   }
 
 
