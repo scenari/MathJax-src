@@ -119,8 +119,8 @@ export class Menu {
             scale: 1,
             autocollapse: false,
             collapsible: false,
-            inTabOrder: true
-            explorer: false,
+            inTabOrder: true,
+            explorer: false
         },
         jax: {
             CHTML: null,
