@@ -475,7 +475,14 @@ export class HoverRegion extends AbstractRegion<HTMLElement> {
         // SVG specific
         //
         if (mjx.nodeName === 'svg') {
-          (mjx.firstChild as HTMLElement).setAttribute('transform', 'matrix(1 0 0 -1 0 0)');
+          if (node.getAttribute('data-semantic-type') === 'dummy') {
+            // Case of a collapsed element.
+            let sibling = node.nextSibling.cloneNode(true) as HTMLElement;
+            sibling.setAttribute('transform', 'matrix(1 0 0 -1 0 0)');
+            mjx.appendChild(sibling);
+          } else {
+            (mjx.firstChild as HTMLElement).setAttribute('transform', 'matrix(1 0 0 -1 0 0)');
+          }
           const W = parseFloat(mjx.getAttribute('viewBox').split(/ /)[2]);
           const w = parseFloat(mjx.getAttribute('width'));
           const {x, y, width, height} = (node as any).getBBox();
