@@ -146,6 +146,10 @@ export abstract class AbstractKeyExplorer<T> extends AbstractExplorer<T> impleme
 }
 
 
+export const START_KEY = 13;
+export const STOP_KEY = 27;
+
+
 /**
  * Explorer that pushes speech to live region.
  * @constructor
@@ -206,7 +210,9 @@ export class SpeechExplorer extends AbstractKeyExplorer<string> {
    */
   public Update(force: boolean = false) {
     super.Update(force);
-    this.region.Update(this.walker.speech());
+    if (this.active) {
+      this.region.Update(this.walker.speech());
+    }
   }
 
 
@@ -231,7 +237,7 @@ export class SpeechExplorer extends AbstractKeyExplorer<string> {
    */
   public KeyDown(event: KeyboardEvent) {
     const code = event.keyCode;
-    if (code === 27) {
+    if (code === STOP_KEY) {
       this.Stop();
       this.stopEvent(event);
       return;
@@ -241,7 +247,7 @@ export class SpeechExplorer extends AbstractKeyExplorer<string> {
       this.stopEvent(event);
       return;
     }
-    if (code === 32 && event.shiftKey || code === 13) {
+    if (code === START_KEY) {
       this.Start();
       this.stopEvent(event);
     }
@@ -336,17 +342,17 @@ export class Magnifier extends AbstractKeyExplorer<HTMLElement> {
    */
   public KeyDown(event: KeyboardEvent) {
     const code = event.keyCode;
-    if (code === 27) {
+    if (code === STOP_KEY) {
       this.Stop();
       this.stopEvent(event);
       return;
     }
-    if (this.active && code !== 13) {
+    if (this.active && code !== START_KEY) {
       this.Move(code);
       this.stopEvent(event);
       return;
     }
-    if (code === 32 && event.shiftKey || code === 13) {
+    if (code === START_KEY) {
       this.Start();
       this.stopEvent(event);
     }

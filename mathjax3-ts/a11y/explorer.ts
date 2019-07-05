@@ -139,11 +139,10 @@ export function ExplorerMathItemMixin<B extends Constructor<HTMLMATHITEM>>(
             this.attached = [];
             for (let key of Object.keys(this.explorers)) {
                 let explorer = this.explorers[key];
+                explorer.Detach();
                 if (document.options.a11y[key]) {
                     explorer.Attach();
                     this.attached.push(explorer);
-                } else {
-                    explorer.Detach();
                 }
             }
             this.addExplorers(this.attached);
@@ -157,7 +156,9 @@ export function ExplorerMathItemMixin<B extends Constructor<HTMLMATHITEM>>(
             this.refocus = (window.document.activeElement === this.typesetRoot);
             for (let explorer of this.attached) {
                 if (explorer.active) {
-                    this.restart = true;
+                    if (explorer instanceof ke.AbstractKeyExplorer) {
+                        this.restart = true;
+                    }
                     explorer.Stop();
                 }
             }
@@ -237,7 +238,7 @@ export function ExplorerMathDocumentMixin<B extends MathDocumentConstructor<HTML
                 backgroundColor: 'Blue',
                 backgroundOpacity: .2,
                 braille: true,
-                flame: true,
+                flame: false,
                 foregroundColor: 'Black',
                 foregroundOpacity: 1,
                 highlight: 'None',
@@ -247,11 +248,11 @@ export function ExplorerMathDocumentMixin<B extends MathDocumentConstructor<HTML
                 infoType: false,
                 keymagnifier: false,
                 magnification: 'None',
-                magnify: 500,
+                magnify: '300%',
                 mousemagnifier: false,
                 speech: true,
                 subtitles: true,
-                treecoloring: true,
+                treecoloring: false,
                 viewbraille: false
           }
         };
@@ -497,7 +498,7 @@ export function setA11yOption(document: HTMLDOCUMENT, option: string, value: str
         }
         break;
     case 'magnify':
-        document.options.a11y.magnify = parseFloat(value as string);
+        document.options.a11y.magnify = parseFloat(value as string) + '%';
         break;
     default:
         document.options.a11y[option] = value;
