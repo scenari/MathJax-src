@@ -122,22 +122,15 @@ export class Menu {
             inTabOrder: true,
             explorer: false,
             // These have to kept in sync with the A11y module.
-            align: 'top',
             backgroundColor: 'Blue',
-            backgroundOpacity: .2,
             braille: true,
-            flame: false,
             foregroundColor: 'Black',
-            foregroundOpacity: 1,
             highlight: 'None',
-            hover: false,
             infoPrefix: false,
             infoRole: false,
             infoType: false,
-            keymagnifier: false,
             magnification: 'None',
             magnify: '300%',
-            mousemagnifier: false,
             speech: true,
             subtitles: true,
             treecoloring: false,
@@ -384,9 +377,6 @@ export class Menu {
         const jax = this.document.outputJax;
         this.jax[jax.name] = jax;
         this.settings.renderer = jax.name;
-        if (window.MathJax._.a11y && window.MathJax._.a11y.explorer) {
-            Object.assign(this.settings, this.document.options.a11y);
-        }
         this.settings.scale = jax.options.scale;
         this.defaultSettings = Object.assign({}, this.settings);
     }

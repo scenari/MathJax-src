@@ -139,11 +139,10 @@ export function ExplorerMathItemMixin<B extends Constructor<HTMLMATHITEM>>(
             this.attached = [];
             for (let key of Object.keys(this.explorers)) {
                 let explorer = this.explorers[key];
+                explorer.Detach();
                 if (document.options.a11y[key]) {
                     explorer.Attach();
                     this.attached.push(explorer);
-                } else {
-                    explorer.Detach();
                 }
             }
             this.addExplorers(this.attached);
