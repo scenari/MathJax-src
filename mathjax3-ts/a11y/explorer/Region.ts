@@ -458,6 +458,8 @@ export class HoverRegion extends AbstractRegion<HTMLElement> {
    * @return {HTMLElement} The cloned node.
    */
   private cloneNode(node: HTMLElement): HTMLElement {
+    console.log('Entering');
+    console.log(node);
     let mjx = node.cloneNode(true) as HTMLElement;
     if (mjx.nodeName !== 'MJX-CONTAINER') {
       // remove element spacing (could be done in CSS)
@@ -487,11 +489,33 @@ export class HoverRegion extends AbstractRegion<HTMLElement> {
           let W = 1;
           if (viewbox) {
             W = parseFloat(viewbox.split(/ /)[2]);
+          } else {
+            // Check if from node the first ancestor SVG is the one with a viewbox, use that.
+            let parent = node;
+            while (parent && parent.nodeName !== 'svg') {
+              parent = parent.parentNode as HTMLElement;
+            }
+            if (parent && parent.hasAttribute('viewBox')) {
+              W = parseFloat(parent.getAttribute('viewBox').split(/ /)[2]);
+            } else {
+              let subs = mjx.getElementsByTagName('svg');
+              w = parseFloat(mjx.getAttribute('height'));
+              mjx = subs[0];
+              W = parseFloat(mjx.getAttribute('viewBox').split(/ /)[2]);
+              (mjx.firstChild as HTMLElement).setAttribute('transform', 'matrix(1 0 0 -1 0 0)');
+              node = node.firstChild.firstChild as HTMLElement;
+            }
+            // Now get the viewboxes underneath and add.
           }
-          const w = parseFloat(mjx.getAttribute('width'));
+          // const w = parseFloat(mjx.getAttribute('width'));
           const {x, y, width, height} = (node as any).getBBox();
+          console.log(`${x}, ${y}, ${width}, ${height}`);
+          const w = mjx.hasAttribute('width') ? parseFloat(mjx.getAttribute('width')) : 100;
+          console.log(w);
           mjx.setAttribute('viewBox', [x, -(y + height), width, height].join(' '));
           mjx.removeAttribute('style');
+          mjx.setAttribute('width', (w / W * width) + 'ex');
+          mjx.setAttribute('height', (w / W * height) + 'ex');
           container.setAttribute('sre-highlight', 'false');
         }
       }
