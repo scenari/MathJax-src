@@ -483,7 +483,11 @@ export class HoverRegion extends AbstractRegion<HTMLElement> {
           } else {
             (mjx.firstChild as HTMLElement).setAttribute('transform', 'matrix(1 0 0 -1 0 0)');
           }
-          const W = parseFloat(mjx.getAttribute('viewBox').split(/ /)[2]);
+          const viewbox = mjx.getAttribute('viewBox');
+          let W = 1;
+          if (viewbox) {
+            W = parseFloat(viewbox.split(/ /)[2]);
+          }
           const w = parseFloat(mjx.getAttribute('width'));
           const {x, y, width, height} = (node as any).getBBox();
           mjx.setAttribute('viewBox', [x, -(y + height), width, height].join(' '));
