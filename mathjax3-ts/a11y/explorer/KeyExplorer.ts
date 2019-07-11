@@ -163,8 +163,6 @@ export class SpeechExplorer extends AbstractKeyExplorer<string> {
    */
   public speechGenerator: sre.SpeechGenerator;
 
-  public showRegion: string = 'subtitles';
-
   /**
    * Flag in case the start method is triggered before the walker is fully
    * initialised. I.e., we have to wait for SRE. Then region is re-shown if
@@ -180,7 +178,8 @@ export class SpeechExplorer extends AbstractKeyExplorer<string> {
   constructor(public document: A11yDocument,
               protected region: Region<string>,
               protected node: HTMLElement,
-              private mml: HTMLElement) {
+              private mml: HTMLElement,
+              private showRegion: string) {
     super(document, region, node);
     this.initWalker();
   }

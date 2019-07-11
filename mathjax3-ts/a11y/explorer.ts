@@ -373,19 +373,19 @@ type ExplorerInit = (doc: ExplorerMathDocument,
  */
 let allExplorers: {[options: string]: ExplorerInit} = {
     speech: (doc: ExplorerMathDocument, node: HTMLElement, ...rest: any[]) => {
+        rest.push('subtitles');
         let explorer = ke.SpeechExplorer.create(
             doc, doc.explorerRegions.speechRegion, node, ...rest) as ke.SpeechExplorer;
         explorer.speechGenerator.setOptions({locale: 'en', domain: 'mathspeak',
                                              style: 'default', modality: 'speech'});
-        explorer.showRegion = 'subtitles';
         return explorer;
     },
     braille: (doc: ExplorerMathDocument, node: HTMLElement, ...rest: any[]) => {
+        rest.push('viewbraille');
         let explorer = ke.SpeechExplorer.create(
             doc, doc.explorerRegions.brailleRegion, node, ...rest) as ke.SpeechExplorer;
         explorer.speechGenerator.setOptions({locale: 'nemeth', domain: 'default',
                                              style: 'default', modality: 'braille'});
-        explorer.showRegion = 'viewbraille';
         return explorer;
     },
     keymagnifier: (doc: ExplorerMathDocument, node: HTMLElement, ...rest: any[]) =>
