@@ -53,7 +53,17 @@ export interface KeyExplorer extends Explorer {
    */
   FocusOut(event: FocusEvent): void;
 
+  /**
+   * Perform a move given a keycode.
+   * @param {number} key The keycode from the KeyDown event.
+   */
+  Move(key: number): void;
+
 }
+
+
+export const START_KEY = 13;
+export const STOP_KEY = 27;
 
 
 /**
@@ -88,13 +98,7 @@ export abstract class AbstractKeyExplorer<T> extends AbstractExplorer<T> impleme
   /**
    * @override
    */
-  public abstract KeyDown(event: KeyboardEvent): void;
-
-  /**
-   * @override
-   */
-  public FocusIn(event: FocusEvent) {
-  }
+  public FocusIn(event: FocusEvent) { }
 
   /**
    * @override
@@ -143,11 +147,38 @@ export abstract class AbstractKeyExplorer<T> extends AbstractExplorer<T> impleme
     super.Stop();
   }
 
+  /**
+   * @override
+   */
+  public KeyDown(event: KeyboardEvent) {
+    const code = event.keyCode;
+    if (code === STOP_KEY) {
+      this.Stop();
+      this.stopEvent(event);
+      return;
+    }
+    if (this.active) {
+      this.Move(code);
+      this.stopEvent(event);
+      return;
+    }
+    if (code === START_KEY) {
+      this.Start();
+      this.stopEvent(event);
+    }
+  }
+
+  /**
+   * @override
+   */
+  public Move(key: number) {
+    let result = this.walker.move(key);
+    if (result) {
+      this.Update();
+    }
+  }
+
 }
-
-
-export const START_KEY = 13;
-export const STOP_KEY = 27;
 
 
 /**
@@ -232,36 +263,6 @@ export class SpeechExplorer extends AbstractKeyExplorer<string> {
 
 
   /**
-   * @override
-   */
-  public KeyDown(event: KeyboardEvent) {
-    const code = event.keyCode;
-    if (code === STOP_KEY) {
-      this.Stop();
-      this.stopEvent(event);
-      return;
-    }
-    if (this.active) {
-      this.Move(code);
-      this.stopEvent(event);
-      return;
-    }
-    if (code === START_KEY) {
-      this.Start();
-      this.stopEvent(event);
-    }
-  }
-
-
-  /**
-   * @override
-   */
-  public Move(key: number) {
-    this.walker.move(key);
-    this.Update();
-  }
-
-  /**
    * Initialises the SRE walker.
    */
   private initWalker() {
@@ -299,17 +300,6 @@ export class Magnifier extends AbstractKeyExplorer<HTMLElement> {
   /**
    * @override
    */
-  public Update(force: boolean = false) {
-    super.Update(force);
-    if (this.active) {
-      this.showFocus();
-    }
-  }
-
-
-  /**
-   * @override
-   */
   public Start() {
     super.Start();
     this.region.Show(this.node, this.highlighter);
@@ -317,45 +307,15 @@ export class Magnifier extends AbstractKeyExplorer<HTMLElement> {
     this.Update();
   }
 
-
   /**
    * @override
    */
-  public Move(key: number) {
-    let result = this.walker.move(key);
-    if (result) {
-      this.Update();
-    }
-  }
-
-
-  /**
-   * @override
-   */
-  public KeyDown(event: KeyboardEvent) {
-    const code = event.keyCode;
-    if (code === STOP_KEY) {
-      this.Stop();
-      this.stopEvent(event);
-      return;
-    }
+  public Update(force: boolean = false) {
+    super.Update(force);
     if (this.active) {
-      this.Move(code);
-      this.stopEvent(event);
-      return;
+      let node = this.walker.getFocus().getNodes()[0] as HTMLElement;
+      this.region.Show(node, this.highlighter);
     }
-    if (code === START_KEY) {
-      this.Start();
-      this.stopEvent(event);
-    }
-  }
-
-  /**
-   * Shows the nodes that are currently focused.
-   */
-  private showFocus() {
-    let node = this.walker.getFocus().getNodes()[0] as HTMLElement;
-    this.region.Show(node, this.highlighter);
   }
 
 }
