@@ -458,8 +458,6 @@ export class HoverRegion extends AbstractRegion<HTMLElement> {
    * @return {HTMLElement} The cloned node.
    */
   private cloneNode(node: HTMLElement): HTMLElement {
-    console.log('Entering');
-    console.log(node);
     let mjx = node.cloneNode(true) as HTMLElement;
     if (mjx.nodeName !== 'MJX-CONTAINER') {
       // remove element spacing (could be done in CSS)
