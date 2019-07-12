@@ -317,15 +317,6 @@ export class Magnifier extends AbstractKeyExplorer<HTMLElement> {
 
 
   /**
-   * Shows the nodes that are currently focused.
-   */
-  private showFocus() {
-    let node = this.walker.getFocus().getNodes()[0] as HTMLElement;
-    this.region.Show(node, this.highlighter);
-  }
-
-
-  /**
    * @override
    */
   public Move(key: number) {
@@ -355,6 +346,14 @@ export class Magnifier extends AbstractKeyExplorer<HTMLElement> {
       this.Start();
       this.stopEvent(event);
     }
+  }
+
+  /**
+   * Shows the nodes that are currently focused.
+   */
+  private showFocus() {
+    let node = this.walker.getFocus().getNodes()[0] as HTMLElement;
+    this.region.Show(node, this.highlighter);
   }
 
 }
