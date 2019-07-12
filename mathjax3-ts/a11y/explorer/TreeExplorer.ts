@@ -39,18 +39,17 @@ export class AbstractTreeExplorer extends AbstractExplorer<void> {
   /**
    * @override
    */
+  public readonly stoppable = false;
+
+  /**
+   * @override
+   */
   protected constructor(public document: A11yDocument,
               protected region: Region<void>,
                         protected node: HTMLElement,
                         protected mml: HTMLElement) {
     super(document, null, node);
   }
-
-  /**
-   * @override
-   */
-  readonly stoppable = false;
-
 
   /**
    * @override
@@ -79,7 +78,11 @@ export class FlameColorer extends AbstractTreeExplorer {
   public Start() {
     if (this.active) return;
     this.active = true;
-    this.highlighter.highlightAll(this.node);
+    // This ensures that flamer works on SVG on page load. Otherwise bounding
+    // boxes of maction elements are still empty.
+    setTimeout(function() {
+      this.highlighter.highlightAll(this.node);
+    }.bind(this), 1);
   }
 
   /**
