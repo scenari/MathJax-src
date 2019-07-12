@@ -301,7 +301,9 @@ export class Magnifier extends AbstractKeyExplorer<HTMLElement> {
    */
   public Update(force: boolean = false) {
     super.Update(force);
-    this.showFocus();
+    if (this.active) {
+      this.showFocus();
+    }
   }
 
 
@@ -337,7 +339,7 @@ export class Magnifier extends AbstractKeyExplorer<HTMLElement> {
       this.stopEvent(event);
       return;
     }
-    if (this.active && code !== START_KEY) {
+    if (this.active) {
       this.Move(code);
       this.stopEvent(event);
       return;
