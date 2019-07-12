@@ -82,6 +82,12 @@ export abstract class AbstractMouseExplorer<T> extends AbstractExplorer<T> imple
     this.Stop();
   }
 
+  /**
+   * @override
+   */
+  public Start() {
+    this.active = true;
+  }
 }
 
 
