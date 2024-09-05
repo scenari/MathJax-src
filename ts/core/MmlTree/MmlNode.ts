@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2017 The MathJax Consortium
+ *  Copyright (c) 2017-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -87,6 +87,7 @@ export type MMLNODE = MmlNode | TextNode | XMLNode;
  */
 
 export interface MmlNode extends Node {
+
   /**
    * Test various properties of MathML nodes
    */
@@ -95,21 +96,25 @@ export interface MmlNode extends Node {
   readonly isSpacelike: boolean;
   readonly linebreakContainer: boolean;
   readonly hasNewLine: boolean;
+
   /**
    *  The expected number of children (-1 means use inferred mrow)
    */
   readonly arity: number;
   readonly isInferred: boolean;
+
   /**
    *  Get the parent node (skipping inferred mrows and
    *    other nodes marked as notParent)
    */
   readonly Parent: MmlNode;
   readonly notParent: boolean;
+
   /**
    * The actual parent in the tree
    */
   parent: MmlNode;
+
   /**
    *  values needed for TeX spacing computations
    */
@@ -127,16 +132,19 @@ export interface MmlNode extends Node {
    *                    core <mo> node.  For non-embellished nodes, the original node.
    */
   core(): MmlNode;
+
   /**
    * @return {MmlNode}  For embellished operators, the core <mo> element (at whatever
    *                    depth).  For non-embellished nodes, the original node itself.
    */
   coreMO(): MmlNode;
+
   /**
    * @return {number}   For embellished operators, the index of the child node containing
    *                    the core <mo>.  For non-embellished nodes, 0.
    */
   coreIndex(): number;
+
   /**
    * @return {number}  The index of this node in its parent's childNodes array.
    */
@@ -149,10 +157,12 @@ export interface MmlNode extends Node {
    *                    in the tree (usually, either the last child, or the node itself)
    */
   setTeXclass(prev: MmlNode): MmlNode;
+
   /**
    * @return {string}  The spacing to use before this element (one of TEXSPACELENGTH array above)
    */
   texSpacing(): string;
+
   /**
    * @return {boolean}  The core mo element has an explicit 'form', 'lspace', or 'rspace' attribute
    */
@@ -183,8 +193,9 @@ export interface MmlNode extends Node {
    * @param {string} message         The error message to use
    * @param {PropertyList} options   The options telling how much to verify
    * @param {boolean} short          True means use just the kind if not using full errors
+   * @return {MmlNode}               The construted merror
    */
-  mError(message: string, options: PropertyList, short?: boolean): void;
+  mError(message: string, options: PropertyList, short?: boolean): MmlNode;
 
   /**
    * Check integrity of MathML structure
@@ -201,10 +212,12 @@ export interface MmlNode extends Node {
  */
 
 export interface MmlNodeClass extends NodeClass {
+
   /**
    *  The list of default attribute values for nodes of this class
    */
   defaults?: PropertyList;
+
   /**
    * An MmlNode takes a NodeFactory (so it can create additional nodes as needed), a list
    *   of attributes, and an array of children and returns the desired MmlNode with
@@ -216,6 +229,7 @@ export interface MmlNodeClass extends NodeClass {
    * @param {MmlNode[]} children       The initial child nodes (more can be added later)
    */
   new (factory: MmlFactory, attributes?: PropertyList, children?: MmlNode[]): MmlNode;
+
 }
 
 
@@ -226,6 +240,7 @@ export interface MmlNodeClass extends NodeClass {
  */
 
 export abstract class AbstractMmlNode extends AbstractNode implements MmlNode {
+
   /**
    * The properties common to all MathML nodes
    */
@@ -236,6 +251,7 @@ export abstract class AbstractMmlNode extends AbstractNode implements MmlNode {
     //    scale all spaces, fractions, etc.
     dir: INHERIT
   };
+
   /**
    *  This lists properties that do NOT get inherited between specific kinds
    *  of nodes.  The outer keys are the node kinds that are being inherited FROM,
@@ -281,13 +297,10 @@ export abstract class AbstractMmlNode extends AbstractNode implements MmlNode {
    */
 
   /**
-   * The TeX class for this node
-   */
-  public texClass: number = null;
-  /**
    * The TeX class for the preceding node
    */
   public prevClass: number = null;
+
   /**
    * The scriptlevel of the preceding node
    */
@@ -302,14 +315,21 @@ export abstract class AbstractMmlNode extends AbstractNode implements MmlNode {
    *  Child nodes are MmlNodes (special case of Nodes).
    */
   public childNodes: MmlNode[];
+
   /**
    * The parent is an MmlNode
    */
   public parent: MmlNode;
+
   /**
    * The node factory is an MmlFactory
    */
-  public factory: MmlFactory;
+  public readonly factory: MmlFactory;
+
+  /**
+   * The TeX class of this node (obtained via texClass below)
+   */
+  protected texclass: number = null;
 
   /**
    *  Create an MmlNode:
@@ -331,6 +351,54 @@ export abstract class AbstractMmlNode extends AbstractNode implements MmlNode {
       factory.getNodeClass('math').defaults
     );
     this.attributes.setList(attributes);
+  }
+
+  /**
+   * @override
+   *
+   * @param {boolean} keepIds   True to copy id attributes, false to skip them.
+   *                              (May cause error in the future, since not part of the interface.)
+   * @return {AbstractMmlNode}  The copied node tree.
+   */
+  public copy(keepIds: boolean = false): AbstractMmlNode {
+    const node = this.factory.create(this.kind) as AbstractMmlNode;
+    node.properties = {...this.properties};
+    if (this.attributes) {
+      const attributes = this.attributes.getAllAttributes();
+      for (const name of Object.keys(attributes)) {
+        if (name !== 'id' || keepIds) {
+          node.attributes.set(name, attributes[name]);
+        }
+      }
+    }
+    if (this.childNodes && this.childNodes.length) {
+      let children = this.childNodes as MmlNode[];
+      if (children.length === 1 && children[0].isInferred) {
+        children = children[0].childNodes as MmlNode[];
+      }
+      for (const child of children) {
+        if (child) {
+          node.appendChild(child.copy() as MmlNode);
+        } else {
+          node.childNodes.push(null);
+        }
+      }
+    }
+    return node;
+  }
+
+  /**
+   * The TeX class for this node
+   */
+  public get texClass(): number {
+    return this.texclass;
+  }
+
+  /**
+   * The TeX class for this node
+   */
+  public set texClass(texClass: number) {
+    this.texclass = texClass;
   }
 
   /**
@@ -416,7 +484,8 @@ export abstract class AbstractMmlNode extends AbstractNode implements MmlNode {
     return super.setChildren(children);
   }
   /**
-   * If there is an inferred row, append to that instead
+   * If there is an inferred row, append to that instead.
+   * If a child is inferred, append its children instead.
    *
    * @override
    */
@@ -424,6 +493,26 @@ export abstract class AbstractMmlNode extends AbstractNode implements MmlNode {
     if (this.arity < 0) {
       this.childNodes[0].appendChild(child);
       return child;
+    }
+    if (child.isInferred) {
+      //
+      //  If we can have arbitrary children, remove the inferred mrow
+      //  (just add its children).
+      //
+      if (this.arity === Infinity) {
+        child.childNodes.forEach((node) => super.appendChild(node));
+        return child;
+      }
+      //
+      //  Otherwise, convert the inferred mrow to an explicit mrow
+      //
+      const original = child;
+      child = this.factory.create('mrow');
+      child.setChildren(original.childNodes);
+      child.attributes = original.attributes;
+      for (const name of original.getPropertyNames()) {
+        child.setProperty(name, original.getProperty(name));
+      }
     }
     return super.appendChild(child);
   }
@@ -709,12 +798,14 @@ export abstract class AbstractMmlNode extends AbstractNode implements MmlNode {
    * @param {string} message         The error message to use
    * @param {PropertyList} options   The options telling how much to verify
    * @param {boolean} short          True means use just the kind if not using full errors
+   * @return {MmlNode}               The constructed merror
    */
-  public mError(message: string, options: PropertyList, short: boolean = false) {
+  public mError(message: string, options: PropertyList, short: boolean = false): MmlNode {
     if (this.parent && this.parent.isKind('merror')) {
       return null;
     }
     let merror = this.factory.create('merror');
+    merror.attributes.set('data-mjx-message', message);
     if (options['fullErrors'] || short) {
       let mtext = this.factory.create('mtext');
       let text = this.factory.create('text') as TextNode;
@@ -1101,7 +1192,9 @@ export abstract class AbstractMmlEmptyNode extends AbstractEmptyNode implements 
   /**
    *  @override
    */
-  public mError(_message: string, _options: PropertyList, _short: boolean = false) {}
+  public mError(_message: string, _options: PropertyList, _short: boolean = false) {
+    return null as MmlNode;
+  }
 
 }
 
@@ -1137,6 +1230,13 @@ export class TextNode extends AbstractMmlEmptyNode {
   public setText(text: string): TextNode {
     this.text = text;
     return this;
+  }
+
+  /**
+   * @override
+   */
+  public copy() {
+    return (this.factory.create(this.kind) as TextNode).setText(this.getText());
   }
 
   /**
@@ -1194,7 +1294,14 @@ export class XMLNode extends AbstractMmlEmptyNode {
    * @return {string}  The serialized XML content
    */
   public getSerializedXML(): string {
-    return this.adaptor.outerHTML(this.xml);
+    return this.adaptor.serializeXML(this.xml);
+  }
+
+  /**
+   * @override
+   */
+  public copy(): XMLNode {
+    return (this.factory.create(this.kind) as XMLNode).setXML(this.adaptor.clone(this.xml));
   }
 
   /**

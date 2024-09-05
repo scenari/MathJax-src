@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2017 The MathJax Consortium
+ *  Copyright (c) 2017-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,20 +24,6 @@
 import {BIGDIMEN} from './lengths.js';
 
 /**
- *  CSS styles that affect BBoxes
- */
-export const BBoxStyleAdjust = [
-  ['borderTopWidth', 'h'],
-  ['borderRightWidth', 'w'],
-  ['borderBottomWidth', 'd'],
-  ['borderLeftWidth', 'w', 0],
-  ['paddingTop', 'h'],
-  ['paddingRight', 'w'],
-  ['paddingBottom', 'd'],
-  ['paddingLeft', 'w', 0]
-];
-
-/**
  *  The data used to initialize a BBox
  */
 export type BBoxData = {
@@ -58,6 +44,20 @@ export class BBox {
   public static fullWidth = '100%';
 
   /**
+   *  CSS styles that affect BBoxes
+   */
+  public static StyleAdjust: [string, string, number?][] = [
+    ['borderTopWidth', 'h'],
+    ['borderRightWidth', 'w'],
+    ['borderBottomWidth', 'd'],
+    ['borderLeftWidth', 'w', 0],
+    ['paddingTop', 'h'],
+    ['paddingRight', 'w'],
+    ['paddingBottom', 'd'],
+    ['paddingLeft', 'w', 0]
+  ];
+
+  /**
    *  These are the data stored for a bounding box
    */
   /* tslint:disable:jsdoc-require */
@@ -71,6 +71,7 @@ export class BBox {
   public pwidth: string; // percentage width (for tables)
   public ic: number;     // italic correction
   public sk: number;     // skew
+  public dx: number;     // offset for combining characters as accents
   /* tslint:enable */
 
   /**
@@ -96,7 +97,7 @@ export class BBox {
     this.w = def.w || 0;
     this.h = ('h' in def ? def.h : -BIGDIMEN);
     this.d = ('d' in def ? def.d : -BIGDIMEN);
-    this.L = this.R = this.ic = this.sk = 0;
+    this.L = this.R = this.ic = this.sk = this.dx = 0;
     this.scale = this.rscale = 1;
     this.pwidth = '';
   }

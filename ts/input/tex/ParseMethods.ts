@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2017 The MathJax Consortium
+ *  Copyright (c) 2017-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -33,13 +33,21 @@ import ParseUtil from './ParseUtil.js';
 namespace ParseMethods {
 
   /**
-   * Handle a variable (a single letter).
+   * Handle a variable (a single letter or multi-letter if allowed).
    * @param {TexParser} parser The current tex parser.
-   * @param {string} c The single letter string to transform into an mi.
+   * @param {string} c The letter to transform into an mi.
    */
   export function variable(parser: TexParser, c: string) {
     // @test Identifier Font
     const def = ParseUtil.getFontDef(parser);
+    const env = parser.stack.env;
+    if (env.multiLetterIdentifiers && env.font !== '') {
+      c = parser.string.substr(parser.i - 1).match(env.multiLetterIdentifiers as any as RegExp)[0];
+      parser.i += c.length - 1;
+      if (def.mathvariant === TexConstant.Variant.NORMAL && env.noAutoOP && c.length > 1) {
+        def.autoOP = false;
+      }
+    }
     // @test Identifier
     const node = parser.create('token', 'mi', def, c);
     parser.Push(node);

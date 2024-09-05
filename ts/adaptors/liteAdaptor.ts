@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2018 The MathJax Consortium
+ *  Copyright (c) 2018-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
  */
 
 import {AbstractDOMAdaptor} from '../core/DOMAdaptor.js';
+import {NodeMixin, Constructor} from './NodeMixin.js';
 import {LiteDocument} from './lite/Document.js';
 import {LiteElement, LiteNode} from './lite/Element.js';
 import {LiteText, LiteComment} from './lite/Text.js';
@@ -29,26 +30,15 @@ import {LiteList} from './lite/List.js';
 import {LiteWindow} from './lite/Window.js';
 import {LiteParser} from './lite/Parser.js';
 import {Styles} from '../util/Styles.js';
-import {userOptions, defaultOptions, OptionList} from '../util/Options.js';
+import {OptionList} from '../util/Options.js';
 
 /************************************************************/
+
+
 /**
  * Implements a lightweight DOMAdaptor on liteweight HTML elements
  */
-export class LiteAdaptor extends AbstractDOMAdaptor<LiteElement, LiteText, LiteDocument> {
-  /**
-   * The default options
-   */
-  public static OPTIONS: OptionList = {
-    fontSize: 16,        // We can't compute the font size, so always use this
-    fontFamily: 'Times'  // We can't compute the font family, so always use this
-  };
-
-  /**
-   * The options for the instance
-   */
-  public options: OptionList;
-
+export class LiteBase extends AbstractDOMAdaptor<LiteElement, LiteText, LiteDocument> {
   /**
    * The document in which the HTML nodes will be created
    */
@@ -68,10 +58,8 @@ export class LiteAdaptor extends AbstractDOMAdaptor<LiteElement, LiteText, LiteD
    * @param {OptionList} options  The options for the lite adaptor (e.g., fontSize)
    * @constructor
    */
-  constructor(options: OptionList = null) {
+  constructor() {
     super();
-    let CLASS = this.constructor as typeof LiteAdaptor;
-    this.options = userOptions(defaultOptions({}, CLASS.OPTIONS), options);
     this.parser = new LiteParser();
     this.window = new LiteWindow();
   }
@@ -79,7 +67,7 @@ export class LiteAdaptor extends AbstractDOMAdaptor<LiteElement, LiteText, LiteD
   /**
    * @override
    */
-  public parse(text: string, format?: string) {
+  public parse(text: string, format?: string): LiteDocument {
     return this.parser.parseFromString(text, format, this);
   }
 
@@ -426,15 +414,22 @@ export class LiteAdaptor extends AbstractDOMAdaptor<LiteElement, LiteText, LiteD
   /**
    * @override
    */
-  public innerHTML(node: LiteElement) {
+  public innerHTML(node: LiteElement): string {
     return this.parser.serializeInner(this, node);
   }
 
   /**
    * @override
    */
-  public outerHTML(node: LiteElement) {
+  public outerHTML(node: LiteElement): string {
     return this.parser.serialize(this, node);
+  }
+
+  /**
+   * @override
+   */
+  public serializeXML(node: LiteElement): string {
+    return this.parser.serialize(this, node, true);
   }
 
   /**
@@ -552,23 +547,34 @@ export class LiteAdaptor extends AbstractDOMAdaptor<LiteElement, LiteText, LiteD
   /**
    * @override
    */
+  public insertRules(node: LiteElement, rules: string[]) {
+    node.children = [this.text(rules.join('\n\n') + '\n\n' + this.textContent(node))];
+  }
+
+  /*******************************************************************/
+  /*
+   *  The next four methods get overridden by the NodeMixin below
+   */
+
+  /**
+   * @override
+   */
   public fontSize(_node: LiteElement) {
-    return this.options.fontSize;
+    return 0;
   }
 
   /**
    * @override
    */
   public fontFamily(_node: LiteElement) {
-    return this.options.fontFamily;
+    return '';
   }
 
   /**
    * @override
    */
-  public nodeSize(node: LiteElement, _em: number = 1, _local: boolean = null) {
-    const text = this.textContent(node);
-    return [.6 * text.length, 0] as [number, number];
+  public nodeSize(_node: LiteElement, _em: number = 1, _local: boolean = null) {
+    return [0, 0] as [number, number];
   }
 
   /**
@@ -577,7 +583,13 @@ export class LiteAdaptor extends AbstractDOMAdaptor<LiteElement, LiteText, LiteD
   public nodeBBox(_node: LiteElement) {
     return {left: 0, right: 0, top: 0, bottom: 0};
   }
+
 }
+
+/**
+ * The LiteAdaptor class (add in the NodeMixin methods and options)
+ */
+export class LiteAdaptor extends NodeMixin<LiteElement, LiteText, LiteDocument, Constructor<LiteBase>>(LiteBase) {}
 
 /************************************************************/
 /**
@@ -587,5 +599,5 @@ export class LiteAdaptor extends AbstractDOMAdaptor<LiteElement, LiteText, LiteD
  * @return {LiteAdaptor}        The newly created adaptor
  */
 export function liteAdaptor(options: OptionList = null): LiteAdaptor {
-  return new LiteAdaptor(options);
+  return new LiteAdaptor(null, options);
 }

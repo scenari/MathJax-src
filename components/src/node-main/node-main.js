@@ -1,12 +1,28 @@
+/*************************************************************
+ *
+ *  Copyright (c) 2019-2021 The MathJax Consortium
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 const path = eval("require('path')");  // use actual node version, not webpack's version
 
 /*
  * Load the needed MathJax components
  */
-require('../startup/lib/startup.js');
+require('../startup/init.js');
 const {Loader, CONFIG} = require('../../../js/components/loader.js');
 const {combineDefaults, combineConfig} = require('../../../js/components/global.js');
-const {dependencies, paths, provides} = require('../dependencies.js');
 
 /*
  * Set up the initial configuration
@@ -15,9 +31,6 @@ combineDefaults(MathJax.config, 'loader', {
   require: eval('require'),      // use node's require() to load files
   failed: (err) => {throw err}   // pass on error message to init()'s catch function
 });
-combineDefaults(MathJax.config.loader, 'dependencies', dependencies);
-combineDefaults(MathJax.config.loader, 'paths', paths);
-combineDefaults(MathJax.config.loader, 'provides', provides);
 
 /*
  * Preload core and liteDOM adaptor (needed for node)

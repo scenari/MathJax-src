@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2017 The MathJax Consortium
+ *  Copyright (c) 2017-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -69,9 +69,9 @@ CommonTextNodeMixin<CHTMLConstructor<any, any, any>>(CHTMLWrapper) {
     const adaptor = this.adaptor;
     const variant = this.parent.variant;
     const text = (this.node as TextNode).getText();
+    if (text.length === 0) return;
     if (variant === '-explicitFont') {
-      const font = this.jax.getFontData(this.parent.styles);
-      adaptor.append(parent, this.jax.unknownText(text, variant, font));
+      adaptor.append(parent, this.jax.unknownText(text, variant, this.getBBox().w));
     } else {
       const chars = this.remappedText(text, variant);
       for (const n of chars) {
@@ -81,7 +81,7 @@ CommonTextNodeMixin<CHTMLConstructor<any, any, any>>(CHTMLWrapper) {
                       this.jax.unknownText(String.fromCodePoint(n), variant) :
                       this.html('mjx-c', {class: this.char(n) + font}));
         adaptor.append(parent, node);
-        data.used = true;
+        !data.unknown && this.font.charUsage.add([variant, n]);
       }
     }
   }

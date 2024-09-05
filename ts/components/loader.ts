@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2018 The MathJax Consortium
+ *  Copyright (c) 2018-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,11 +30,19 @@ import {Package, PackageError, PackageReady, PackageFailed} from './package.js';
 export {Package, PackageError, PackageReady, PackageFailed} from './package.js';
 export {MathJaxLibrary} from './global.js';
 
+import {FunctionList} from '../util/FunctionList.js';
+
 /*
  * The current directory (for webpack), and the browser document (if any)
  */
 declare var __dirname: string;
 declare var document: Document;
+
+/**
+ * Function used to determine path to a given package.
+ */
+export type PathFilterFunction = (data: {name: string, original: string, addExtension: boolean}) => boolean;
+export type PathFilterList = (PathFilterFunction | [PathFilterFunction, number])[];
 
 /**
  * Update the configuration structure to include the loader configuration
@@ -49,6 +57,8 @@ export interface MathJaxConfig extends MJConfig {
     ready?: PackageReady;                      // A function to call when MathJax is ready
     failed?: PackageFailed;                    // A function to call when MathJax fails to load
     require?: (url: string) => any;            // A function for loading URLs
+    pathFilters?: PathFilterList;              // List of path filters (and optional priorities) to add
+    versionWarnings?: boolean;                 // True means warn when extension version doesn't match MJ version
     [name: string]: any;                       // Other configuration blocks
   };
 }
@@ -65,14 +75,69 @@ export interface MathJaxObject extends MJObject {
     preLoad: (...names: string[]) => void;            // Indicate that packages are already loaded by hand
     defaultReady: () => void;                         // The function performed when all packages are loaded
     getRoot: () => string;                            // Find the root URL for the MathJax files
+    checkVersion: (name: string, version: string) => boolean;   // Check the version of an extension
+    pathFilters: FunctionList;                        // the filters to use for looking for package paths
   };
   startup?: any;
 }
 
 /**
+ * Functions used to filter the path to a package
+ */
+export const PathFilters: {[name: string]: PathFilterFunction} = {
+  /**
+   * Look up the path in the configuration's source list
+   */
+  source: (data) => {
+    if (CONFIG.source.hasOwnProperty(data.name)) {
+      data.name = CONFIG.source[data.name];
+    }
+    return true;
+  },
+
+  /**
+   * Add [mathjax] before any relative path, and add .js if needed
+   */
+  normalize: (data) => {
+    const name = data.name;
+    if (!name.match(/^(?:[a-z]+:\/)?\/|[a-z]:\\|\[/i)) {
+      data.name = '[mathjax]/' + name.replace(/^\.\//, '');
+    }
+    if (data.addExtension && !name.match(/\.[^\/]+$/)) {
+      data.name += '.js';
+    }
+    return true;
+  },
+
+  /**
+   * Recursively replace path prefixes (e.g., [mathjax], [tex], etc.)
+   */
+  prefix: (data) => {
+    let match;
+    while ((match = data.name.match(/^\[([^\]]*)\]/))) {
+      if (!CONFIG.paths.hasOwnProperty(match[1])) break;
+      data.name = CONFIG.paths[match[1]] + data.name.substr(match[0].length);
+    }
+    return true;
+  }
+
+};
+
+
+/**
  * The implementation of the dynamic loader
  */
 export namespace Loader {
+
+  /**
+   * The version of MathJax that is running.
+   */
+  const VERSION = MJGlobal.version;
+
+  /**
+   * The versions of all the loaded extensions.
+   */
+  export const versions: Map<string, string> = new Map();
 
   /**
    * Get a promise that is resolved when all the named packages have been loaded.
@@ -110,7 +175,12 @@ export namespace Loader {
         extension.provides(CONFIG.provides[name]);
       }
       extension.checkNoLoad();
-      promises.push(extension.promise);
+      promises.push(extension.promise.then(() => {
+        if (!CONFIG.versionWarnings) return;
+        if (extension.isLoaded && !versions.has(Package.resolvePath(name))) {
+          console.warn(`No version information available for component ${name}`);
+        }
+      }) as Promise<null>);
     }
     Package.loadAll();
     return Promise.all(promises);
@@ -157,6 +227,34 @@ export namespace Loader {
     return root;
   }
 
+  /**
+   * Check the version of an extension and report an error if not correct
+   *
+   * @param {string} name       The name of the extension being checked
+   * @param {string} version    The version of the extension to check
+   * @param {string} type       The type of extension (future code may use this to check ranges of versions)
+   * @return {boolean}          True if there was a mismatch, false otherwise
+   */
+  export function checkVersion(name: string, version: string, _type?: string): boolean {
+    versions.set(Package.resolvePath(name), VERSION);
+    if (CONFIG.versionWarnings && version !== VERSION) {
+      console.warn(`Component ${name} uses ${version} of MathJax; version in use is ${VERSION}`);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * The filters to use to modify the paths used to obtain the packages
+   */
+  export const pathFilters = new FunctionList();
+
+  /**
+   * The default filters to use.
+   */
+  pathFilters.add(PathFilters.source, 0);
+  pathFilters.add(PathFilters.normalize, 10);
+  pathFilters.add(PathFilters.prefix, 20);
 }
 
 /**
@@ -167,6 +265,7 @@ export const MathJax = MJGlobal as MathJaxObject;
 /*
  * If the loader hasn't been added to the MathJax variable,
  *   Add the loader configuration, library, and data objects.
+ *   Add any path filters from the configuration.
  */
 if (typeof MathJax.loader === 'undefined') {
 
@@ -180,12 +279,24 @@ if (typeof MathJax.loader === 'undefined') {
     load: [],
     ready: Loader.defaultReady.bind(Loader),
     failed: (error: PackageError) => console.log(`MathJax(${error.package || '?'}): ${error.message}`),
-    require: null
+    require: null,
+    pathFilters: [],
+    versionWarnings: true
   });
   combineWithMathJax({
     loader: Loader
   });
 
+  //
+  // Add any path filters from the configuration
+  //
+  for (const filter of MathJax.config.loader.pathFilters) {
+    if (Array.isArray(filter)) {
+      Loader.pathFilters.add(filter[0], filter[1]);
+    } else {
+      Loader.pathFilters.add(filter);
+    }
+  }
 }
 
 /**

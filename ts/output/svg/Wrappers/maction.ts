@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2018 The MathJax Consortium
+ *  Copyright (c) 2018-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -121,7 +121,7 @@ CommonMactionMixin<SVGWrapper<any, any, any>, SVGConstructor<any, any, any>>(SVG
     ['tooltip', [(node, data) => {
       const tip = node.childNodes[1];
       if (!tip) return;
-      const rect = node.adaptor.firstChild(node.element);
+      const rect = node.firstChild();
       if (tip.node.isKind('mtext')) {
         //
         // Text tooltips are handled through title attributes
@@ -205,12 +205,16 @@ CommonMactionMixin<SVGWrapper<any, any, any>, SVGConstructor<any, any, any>>(SVG
   public toSVG(parent: N) {
     const svg = this.standardSVGnode(parent);
     const child = this.selected;
-    const {h, d, w} = child.getBBox();
+    const {h, d, w} = child.getOuterBBox();
     this.adaptor.append(this.element, this.svg('rect', {
       width: this.fixed(w), height: this.fixed(h + d), y: this.fixed(-d),
       fill: 'none', 'pointer-events': 'all'
     }));
     child.toSVG(svg);
+    const bbox = child.getOuterBBox();
+    if (child.element) {
+      child.place(bbox.L * bbox.rscale, 0);
+    }
     this.action(this, this.data);
   }
 

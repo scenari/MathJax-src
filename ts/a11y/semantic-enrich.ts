@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2018 The MathJax Consortium
+ *  Copyright (c) 2018-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -29,13 +29,12 @@ import {MmlNode} from '../core/MmlTree/MmlNode.js';
 import {MathML} from '../input/mathml.js';
 import {SerializedMmlVisitor} from '../core/MmlTree/SerializedMmlVisitor.js';
 import {OptionList, expandable} from '../util/Options.js';
-
-import {sreReady} from './sre.js';
+import Sre from './sre.js';
 
 /*==========================================================================*/
 
 /**
- *  The current speech setting for SRE
+ *  The current speech setting for Sre
  */
 let currentSpeech = 'none';
 
@@ -58,7 +57,7 @@ newState('ATTACHSPEECH', 155);
 
 
 /**
- * The funtions added to MathItem for enrichment
+ * The functions added to MathItem for enrichment
  *
  * @template N  The HTMLElement node class
  * @template T  The Text node class
@@ -116,7 +115,7 @@ export function EnrichedMathItemMixin<N, T, D, B extends Constructor<AbstractMat
         return div.innerHTML;
       }
       //
-      //  For NodeJS version of SRE
+      //  For NodeJS version of Sre
       //
       return node.toString();
     }
@@ -128,19 +127,23 @@ export function EnrichedMathItemMixin<N, T, D, B extends Constructor<AbstractMat
     public enrich(document: MathDocument<N, T, D>, force: boolean = false) {
       if (this.state() >= STATE.ENRICHED) return;
       if (!this.isEscaped && (document.options.enableEnrichment || force)) {
-        if (typeof sre === 'undefined' || !sre.Engine.isReady()) {
-          mathjax.retryAfter(sreReady());
-        }
-        if (document.options.enrichSpeech !== currentSpeech) {
-          SRE.setupEngine({speech: document.options.enrichSpeech});
-          currentSpeech = document.options.enrichSpeech;
+        if (document.options.sre.speech !== currentSpeech) {
+          currentSpeech = document.options.sre.speech;
+          mathjax.retryAfter(
+            Sre.setupEngine(document.options.sre).then(
+              () => Sre.sreReady()));
         }
         const math = new document.options.MathItem('', MmlJax);
-        math.math = this.serializeMml(SRE.toEnriched(toMathML(this.root)));
-        math.display = this.display;
-        math.compile(document);
-        this.root = math.root;
-        this.inputData.originalMml = math.math;
+        try {
+          const mml = this.inputData.originalMml = toMathML(this.root);
+          math.math = this.serializeMml(Sre.toEnriched(mml));
+          math.display = this.display;
+          math.compile(document);
+          this.root = math.root;
+          this.inputData.enrichedMml = math.math;
+        } catch (err) {
+          document.options.enrichError(document, this, err);
+        }
       }
       this.state(STATE.ENRICHED);
     }
@@ -192,7 +195,7 @@ export function EnrichedMathItemMixin<N, T, D, B extends Constructor<AbstractMat
 /*==========================================================================*/
 
 /**
- * The funtions added to MathDocument for enrichment
+ * The functions added to MathDocument for enrichment
  *
  * @template N  The HTMLElement node class
  * @template T  The Text node class
@@ -213,6 +216,13 @@ export interface EnrichedMathDocument<N, T, D> extends AbstractMathDocument<N, T
    * @return {EnrichedMathDocument}   The MathDocument (so calls can be chained)
    */
   attachSpeech(): EnrichedMathDocument<N, T, D>;
+
+  /**
+   * @param {EnrichedMathDocument} doc   The MathDocument for the error
+   * @paarm {EnrichedMathItem} math      The MathItem causing the error
+   * @param {Error} err                  The error being processed
+   */
+  enrichError(doc: EnrichedMathDocument<N, T, D>, math: EnrichedMathItem<N, T, D>, err: Error): void;
 }
 
 /**
@@ -240,12 +250,20 @@ export function EnrichedMathDocumentMixin<N, T, D, B extends MathDocumentConstru
     public static OPTIONS: OptionList = {
       ...BaseDocument.OPTIONS,
       enableEnrichment: true,
-      enrichSpeech: 'none',                   // or 'shallow', or 'deep'
+      enrichError: (doc: EnrichedMathDocument<N, T, D>,
+                    math: EnrichedMathItem<N, T, D>,
+                    err: Error) => doc.enrichError(doc, math, err),
       renderActions: expandable({
         ...BaseDocument.OPTIONS.renderActions,
         enrich:       [STATE.ENRICHED],
         attachSpeech: [STATE.ATTACHSPEECH]
-      })
+      }),
+      sre: expandable({
+        speech: 'none',                    // by default no speech is included
+        domain: 'mathspeak',               // speech rules domain
+        style: 'default',                  // speech rules style
+        locale: 'en'                       // switch the locale
+      }),
     };
 
     /**
@@ -297,6 +315,12 @@ export function EnrichedMathDocumentMixin<N, T, D, B extends MathDocumentConstru
         this.processed.set('enriched');
       }
       return this;
+    }
+
+    /**
+     */
+    public enrichError(_doc: EnrichedMathDocument<N, T, D>, _math: EnrichedMathItem<N, T, D>, err: Error) {
+      console.warn('Enrichment error:', err);
     }
 
     /**

@@ -1,6 +1,7 @@
+
 /*************************************************************
  *
- *  Copyright (c) 2017 The MathJax Consortium
+ *  Copyright (c) 2017-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,15 +29,7 @@ import {TexConstant} from '../TexConstants.js';
 import ParseMethods from '../ParseMethods.js';
 import ParseUtil from '../ParseUtil.js';
 import {TEXCLASS} from '../../../core/MmlTree/MmlNode.js';
-
-
-let COLS = function(W: number[]) {
-  const WW: string[] = [];
-  for (let i = 0, m = W.length; i < m; i++) {
-    WW[i] = ParseUtil.Em(W[i]);
-  }
-  return WW.join(' ');
-};
+import {MATHSPACE} from '../../../util/lengths.js';
 
 
 /**
@@ -46,6 +39,10 @@ new sm.CharacterMap('AMSmath-mathchar0mo', ParseMethods.mathchar0mo, {
   iiiint:     ['\u2A0C', {texClass: TEXCLASS.OP}]
 });
 
+/**
+ * Extra characters that are letters in \operatorname
+ */
+new sm.RegExpMap('AMSmath-operatorLetter', AmsMethods.operatorLetter, /[-*]/i);
 
 /**
  * Macros from the AMS Math package.
@@ -53,22 +50,15 @@ new sm.CharacterMap('AMSmath-mathchar0mo', ParseMethods.mathchar0mo, {
 new sm.CommandMap('AMSmath-macros', {
   mathring:   ['Accent', '02DA'],  // or 0x30A
   nobreakspace: 'Tilde',
-  negmedspace:    ['Spacer', TexConstant.Length.NEGATIVEMEDIUMMATHSPACE],
-  negthickspace:  ['Spacer', TexConstant.Length.NEGATIVETHICKMATHSPACE],
+  negmedspace:    ['Spacer', MATHSPACE.negativemediummathspace],
+  negthickspace:  ['Spacer', MATHSPACE.negativethickmathspace],
 
-  //    intI:       ['Macro', '\\mathchoice{\\!}{}{}{}\\!\\!\\int'],
-  //    iint:       ['MultiIntegral', '\\int\\intI'],          // now in core TeX input jax
-  //    iiint:      ['MultiIntegral', '\\int\\intI\\intI'],    // now in core TeX input jax
-  //    iiiint:     ['MultiIntegral', '\\int\\intI\\intI\\intI'], // now in mathchar0mo above
   idotsint:   ['MultiIntegral', '\\int\\cdots\\int'],
 
-  //    dddot:      ['Macro', '\\mathop{#1}\\limits^{\\textstyle \\mathord{.}\\mathord{.}\\mathord{.}}', 1],
-  //    ddddot:     ['Macro', '\\mathop{#1}\\limits^{\\textstyle \\mathord{.}\\mathord{.}\\mathord{.}\\mathord{.}}', 1],
   dddot:      ['Accent', '20DB'],
   ddddot:     ['Accent', '20DC'],
 
-  sideset:    ['Macro', '\\mathop{\\mathop{\\rlap{\\phantom{#3}}}\\nolimits#1' +
-               '\\!\\mathop{#3}\\nolimits#2}', 3],
+  sideset:     'SideSet',
 
   boxed:      ['Macro', '\\fbox{$\\displaystyle{#1}$}', 1],
 
@@ -87,7 +77,6 @@ new sm.CommandMap('AMSmath-macros', {
 
   DeclareMathOperator: 'HandleDeclareOp',
   operatorname:        'HandleOperatorName',
-  SkipLimits:          'SkipLimits',
 
   genfrac:     'Genfrac',
   frac:       ['Genfrac', '', '', '', ''],
@@ -102,8 +91,8 @@ new sm.CommandMap('AMSmath-macros', {
   shoveleft:  ['HandleShove', TexConstant.Align.LEFT],
   shoveright: ['HandleShove', TexConstant.Align.RIGHT],
 
-  xrightarrow: ['xArrow', 0x2192, 5, 6],
-  xleftarrow:  ['xArrow', 0x2190, 7, 3]
+  xrightarrow: ['xArrow', 0x2192, 5, 10],
+  xleftarrow:  ['xArrow', 0x2190, 10, 5]
 }, AmsMethods);
 
 
@@ -111,15 +100,14 @@ new sm.CommandMap('AMSmath-macros', {
  * Environments from the AMS Math package.
  */
 new sm.EnvironmentMap('AMSmath-environment', ParseMethods.environment, {
+  'equation*':   ['Equation', null, false],
   'eqnarray*':   ['EqnArray', null, false, true, 'rcl',
-                  '0 ' + TexConstant.Length.THICKMATHSPACE, '.5em'],
-  align:         ['EqnArray', null, true, true,  'rlrlrlrlrlrl',
-                  COLS([0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0])],
-  'align*':      ['EqnArray', null, false, true, 'rlrlrlrlrlrl',
-                  COLS([0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0])],
+                  ParseUtil.cols(0, MATHSPACE.thickmathspace), '.5em'],
+  align:         ['EqnArray', null, true, true,  'rl',  ParseUtil.cols(0, 2)],
+  'align*':      ['EqnArray', null, false, true, 'rl',  ParseUtil.cols(0, 2)],
   multline:      ['Multline', null, true],
   'multline*':   ['Multline', null, false],
-  split:         ['EqnArray', null, false, false, 'rl', COLS([0])],
+  split:         ['EqnArray', null, false, false, 'rl', ParseUtil.cols(0)],
   gather:        ['EqnArray', null, true, true,  'c'],
   'gather*':     ['EqnArray', null, false, true, 'c'],
 
@@ -127,12 +115,17 @@ new sm.EnvironmentMap('AMSmath-environment', ParseMethods.environment, {
   'alignat*':    ['AlignAt', null, false, true],
   alignedat:     ['AlignAt', null, false, false],
 
-  aligned:       ['AmsEqnArray', null, null, null, 'rlrlrlrlrlrl',
-                  COLS([0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0]), '.5em', 'D'],
+  aligned:       ['AmsEqnArray', null, null, null, 'rl', ParseUtil.cols(0, 2), '.5em', 'D'],
   gathered:      ['AmsEqnArray', null, null, null, 'c', null, '.5em', 'D'],
 
-  subarray:      ['Array', null, null, null, null, COLS([0]), '0.1em', 'S', 1],
-  smallmatrix:   ['Array', null, null, null, 'c', COLS([1 / 3]),
+  xalignat:      ['XalignAt', null, true, true],
+  'xalignat*':   ['XalignAt', null, false, true],
+  xxalignat:     ['XalignAt', null, false, false],
+  flalign:       ['FlalignArray', null, true, false, true, 'rlc', 'auto auto fit'],
+  'flalign*':    ['FlalignArray', null, false, false, true, 'rlc', 'auto auto fit'],
+
+  subarray:      ['Array', null, null, null, null, ParseUtil.cols(0), '0.1em', 'S', 1],
+  smallmatrix:   ['Array', null, null, null, 'c', ParseUtil.cols(1 / 3),
                   '.2em', 'S', 1],
   matrix:       ['Array', null, null, null, 'c'],
   pmatrix:      ['Array', null, '(', ')', 'c'],
@@ -221,7 +214,7 @@ new sm.CharacterMap('AMSsymbols-mathchar0mi', ParseMethods.mathchar0mi, {
 /**
  * Operators from the AMS Symbols package.
  */
-new sm.CharacterMap('AMSsymbols-mathchar0m0', ParseMethods.mathchar0mo, {
+new sm.CharacterMap('AMSsymbols-mathchar0mo', ParseMethods.mathchar0mo, {
   // Binary operators
   dotplus:                '\u2214',
   ltimes:                 '\u22C9',

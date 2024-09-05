@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2018 The MathJax Consortium
+ *  Copyright (c) 2018-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -398,15 +398,15 @@ export class Styles {
     for (const name of Object.keys(this.styles)) {
       const parent = this.parentName(name);
       if (!this.styles[parent]) {
-        styles.push(name + ': ' + this.styles[name]);
+        styles.push(name + ': ' + this.styles[name] + ';');
       }
     }
-    return styles.join('; ');
+    return styles.join(' ');
   }
 
   /**
    * @param {string} name   The name of the style to set
-   * @param {srting|number|boolean} value The value to set it to
+   * @param {string|number|boolean} value The value to set it to
    */
   public set(name: string, value: string | number | boolean) {
     name = this.normalizeName(name);

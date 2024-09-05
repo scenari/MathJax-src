@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2017 The MathJax Consortium
+ *  Copyright (c) 2017-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -37,6 +37,10 @@ export type PropertyList = {[key: string]: Property};
 
 export interface Node {
   readonly kind: string;
+  /**
+   * The NodeFactory to use to create additional nodes, as needed
+   */
+  readonly factory: NodeFactory<Node, NodeClass>;
   parent: Node;
   childNodes: Node[];
 
@@ -93,10 +97,21 @@ export interface Node {
   replaceChild(newChild: Node, oldChild: Node): Node;
 
   /**
+   * @param {Node} child   Child node to be removed
+   * @return {Node}        The old child node that was removed
+   */
+  removeChild(child: Node): Node;
+
+  /**
    * @param {Node} child  A child node whose index in childNodes is desired
    * @return {number}     The index of the child in childNodes, or null if not found
    */
   childIndex(child: Node): number;
+
+  /**
+   * Make a deep copy of the node (but with no parent).
+   */
+  copy(): Node;
 
   /**
    * @param {string} kind  The kind of nodes to be located in the tree
@@ -144,11 +159,6 @@ export abstract class AbstractNode implements Node {
   protected properties: PropertyList = {};
 
   /**
-   * The NodeFactory to use to create additional nodes, as needed
-   */
-  protected _factory: NodeFactory<Node, NodeClass> = null;
-
-  /**
    * The children for this node
    */
   public childNodes: Node[] = [];
@@ -161,21 +171,13 @@ export abstract class AbstractNode implements Node {
    * @constructor
    * @implements {Node}
    */
-  constructor(factory: NodeFactory<Node, NodeClass>, properties: PropertyList = {}, children: Node[] = []) {
-    this._factory = factory;
+  constructor(readonly factory: NodeFactory<Node, NodeClass>, properties: PropertyList = {}, children: Node[] = []) {
     for (const name of Object.keys(properties)) {
       this.setProperty(name, properties[name]);
     }
     if (children.length) {
       this.setChildren(children);
     }
-  }
-
-  /**
-   * @override
-   */
-  public get factory () {
-    return this._factory;
   }
 
   /**
@@ -259,8 +261,21 @@ export abstract class AbstractNode implements Node {
     if (i !== null) {
       this.childNodes[i] = newChild;
       newChild.parent = this;
+      oldChild.parent = null;
     }
     return newChild;
+  }
+
+  /**
+   * @override
+   */
+  public removeChild(child: Node) {
+    const i = this.childIndex(child);
+    if (i !== null) {
+      this.childNodes.splice(i, 1);
+      child.parent = null;
+    }
+    return child;
   }
 
 
@@ -272,6 +287,20 @@ export abstract class AbstractNode implements Node {
     return (i === -1 ? null : i);
   }
 
+
+  /**
+   * @override
+   */
+  public copy() {
+    const node = (this as AbstractNode).factory.create(this.kind) as AbstractNode;
+    node.properties = {...this.properties};
+    for (const child of this.childNodes || []) {
+      if (child) {
+        node.appendChild(child.copy());
+      }
+    }
+    return node;
+  }
 
   /**
    * @override

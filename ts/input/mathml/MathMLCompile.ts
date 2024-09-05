@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2017 The MathJax Consortium
+ *  Copyright (c) 2017-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@ export class MathMLCompile<N, T, D> {
     }
     let type = texClass && kind === 'mrow' ? 'TeXAtom' : kind;
     for (const name of this.filterClassList(adaptor.allClasses(node))) {
-      if (name.match(/^MJX-TeXAtom-/)) {
+      if (name.match(/^MJX-TeXAtom-/) && kind === 'mrow') {
         texClass = name.substr(12);
         type = 'TeXAtom';
       } else if (name === 'MJX-fixedlimits') {
@@ -127,9 +127,11 @@ export class MathMLCompile<N, T, D> {
     }
     this.factory.getNodeClass(type) || this.error('Unknown node type "' + type + '"');
     let mml = this.factory.create(type);
-    if (type === 'TeXAtom') {
-      this.texAtom(mml, texClass, limits);
-    } else if (texClass) {
+    if (type === 'TeXAtom' && texClass === 'OP' && !limits) {
+      mml.setProperty('movesupsub', true);
+      mml.attributes.setInherited('movablelimits', true);
+    }
+    if (texClass) {
       mml.texClass = (TEXCLASS as {[name: string]: number})[texClass];
       mml.setProperty('texClass', mml.texClass);
     }
@@ -150,15 +152,31 @@ export class MathMLCompile<N, T, D> {
     for (const attr of this.adaptor.allAttributes(node)) {
       let name = attr.name;
       let value = this.filterAttribute(name, attr.value);
-      if (value === null) {
-        return;
+      if (value === null || name === 'xmlns') {
+        continue;
       }
       if (name.substr(0, 9) === 'data-mjx-') {
-        if (name === 'data-mjx-alternate') {
+        switch (name.substr(9)) {
+        case 'alternate':
           mml.setProperty('variantForm', true);
-        } else if (name === 'data-mjx-variant') {
+          break;
+        case 'variant':
           mml.attributes.set('mathvariant', value);
           ignoreVariant = true;
+          break;
+        case 'smallmatrix':
+          mml.setProperty('scriptlevel', 1);
+          mml.setProperty('useHeight', false);
+          break;
+        case 'accent':
+          mml.setProperty('mathaccent', value === 'true');
+          break;
+        case 'auto-op':
+          mml.setProperty('autoOP', value === 'true');
+          break;
+        case 'script-align':
+          mml.setProperty('scriptalign', value);
+          break;
         }
       } else if (name !== 'class') {
         let val = value.toLowerCase();
@@ -278,22 +296,6 @@ export class MathMLCompile<N, T, D> {
   }
 
   /**
-   * Handle the properties of a TeXAtom
-   *
-   * @param {MmlNode} mml      The node to be updated
-   * @param {string} texClass  The texClass indicated in the MJX class identifier
-   * @param {boolean} limits   Whether MJX-fixedlimits was found in the class list
-   */
-  protected texAtom(mml: MmlNode, texClass: string, limits: boolean) {
-    mml.texClass = (TEXCLASS as {[name: string]: number})[texClass];
-    mml.setProperty('texClass', mml.texClass);
-    if (texClass === 'OP' && !limits) {
-      mml.setProperty('movesupsub', true);
-      mml.attributes.setInherited('movablelimits', true);
-    }
-  }
-
-  /**
    * Check to see if an mrow has delimiters at both ends (so looks like an mfenced structure).
    *
    * @param {MmlNode} mml  The node to check for mfenced structure
@@ -302,8 +304,8 @@ export class MathMLCompile<N, T, D> {
     if (mml.isKind('mrow') && !mml.isInferred && mml.childNodes.length >= 2) {
       let first = mml.childNodes[0] as MmlNode;
       let last = mml.childNodes[mml.childNodes.length - 1] as MmlNode;
-      if (first.isKind('mo') && first.attributes.get('fence') &&
-          last.isKind('mo') && last.attributes.get('fence')) {
+      if (first.isKind('mo') && first.attributes.get('fence') && first.attributes.get('stretchy') &&
+          last.isKind('mo') && last.attributes.get('fence') && last.attributes.get('stretchy')) {
         if (first.childNodes.length) {
           mml.setProperty('open', (first as AbstractMmlTokenNode).getText());
         }

@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2018 The MathJax Consortium
+ *  Copyright (c) 2018-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import {OutputJax} from '../core/OutputJax.js';
 import {CommonOutputJax} from '../output/common/OutputJax.js';
 import {DOMAdaptor} from '../core/DOMAdaptor.js';
 import {PrioritizedList} from '../util/PrioritizedList.js';
-import {OptionList} from '../util/Options.js';
+import {OptionList, OPTIONS} from '../util/Options.js';
 
 import {TeX} from '../input/tex.js';
 
@@ -54,6 +54,8 @@ export interface MathJaxConfig extends MJConfig {
     typeset?: boolean;       // Perform initial typeset?
     ready?: () => void;      // Function to perform when components are ready
     pageReady?: () => void;  // Function to perform when page is ready
+    invalidOption?: 'fatal' | 'warn'; // Do invalid options produce a warning, or throw an error?
+    optionError?: (message: string, key: string) => void,  // Function to report invalid options
     [name: string]: any;     // Other configuration blocks
   };
 }
@@ -90,13 +92,14 @@ export interface MathJaxObject extends MJObject {
     promise: Promise<void>;
     /* tslint:disable:jsdoc-require */
     registerConstructor(name: string, constructor: any): void;
-    useHander(name: string, force?: boolean): void;
+    useHandler(name: string, force?: boolean): void;
     useAdaptor(name: string, force?: boolean): void;
     useOutput(name: string, force?: boolean): void;
     useInput(name: string, force?: boolean): void;
     extendHandler(extend: HandlerExtension): void;
     toMML(node: MmlNode): string;
     defaultReady(): void;
+    defaultPageReady(): Promise<void>;
     getComponents(): void;
     makeMethods(): void;
     makeTypesetMethods(): void;
@@ -449,9 +452,7 @@ export namespace Startup {
    * @param {INPUTJAX} input  The input jax itself
    */
   export function makeResetMethod(name: string, input: INPUTJAX) {
-    if (name === 'tex') {
-      MathJax.texReset = (start: number = 0) => (input as TEX).parseOptions.tags.reset(start);
-    }
+    MathJax[name + 'Reset'] = (...args: any[]) => input.reset(...args);
   }
 
   /**
@@ -536,8 +537,8 @@ export const MathJax = MJGlobal as MathJaxObject;
 
 /*
  * If the startup module hasn't been added to the MathJax variable,
- *   Add the startup configuration and data objects, and create
- *   the initial typeset and conversion calls.
+ *   Add the startup configuration and data objects, and
+ *   set the method for handling invalid options, if provided.
  */
 if (typeof MathJax._.startup === 'undefined') {
 
@@ -557,10 +558,17 @@ if (typeof MathJax._.startup === 'undefined') {
     options: {}
   });
 
+  if (MathJax.config.startup.invalidOption) {
+    OPTIONS.invalidOption = MathJax.config.startup.invalidOption;
+  }
+  if (MathJax.config.startup.optionError) {
+    OPTIONS.optionError = MathJax.config.startup.optionError;
+  }
+
 }
 
 /**
- * Export the loader configuration for convenience
+ * Export the startup configuration for convenience
  */
 export const CONFIG = MathJax.config.startup;
 

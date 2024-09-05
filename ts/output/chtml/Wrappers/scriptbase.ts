@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2017 The MathJax Consortium
+ *  Copyright (c) 2017-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -48,11 +48,6 @@ CommonScriptbaseMixin<CHTMLWrapper<any, any, any>, CHTMLConstructor<any, any, an
   public static kind = 'scriptbase';
 
   /**
-   * Set to true for munderover/munder/mover/msup (Appendix G 13)
-   */
-  public static useIC: boolean = false;
-
-  /**
    * This gives the common output for msub and msup.  It is overridden
    * for all the others (msubsup, munder, mover, munderover).
    *
@@ -60,13 +55,14 @@ CommonScriptbaseMixin<CHTMLWrapper<any, any, any>, CHTMLConstructor<any, any, an
    */
   public toCHTML(parent: N) {
     this.chtml = this.standardCHTMLnode(parent);
-    const [x, v] = this.getOffset(this.baseChild.getBBox(), this.script.getBBox());
+    const [x, v] = this.getOffset();
+    const dx = x - (this.baseRemoveIc ? this.baseIc : 0);
     const style: StyleData = {'vertical-align': this.em(v)};
-    if (x) {
-      style['margin-left'] = this.em(x);
+    if (dx) {
+      style['margin-left'] = this.em(dx);
     }
     this.baseChild.toCHTML(this.chtml);
-    this.script.toCHTML(this.adaptor.append(this.chtml, this.html('mjx-script', {style})) as N);
+    this.scriptChild.toCHTML(this.adaptor.append(this.chtml, this.html('mjx-script', {style})) as N);
   }
 
   /**
@@ -103,6 +99,20 @@ CommonScriptbaseMixin<CHTMLWrapper<any, any, any>, CHTMLConstructor<any, any, an
       adaptor.append(box, child);
     }
     adaptor.append(adaptor.firstChild(under) as N, box);
+  }
+
+  /**
+   * @param {N} base        The HTML element for the base
+   * @param {BBox} basebox  The bbox for the base
+   */
+  protected adjustBaseHeight(base: N, basebox: BBox) {
+    if (this.node.attributes.get('accent')) {
+      const minH = this.font.params.x_height * basebox.scale;
+      if (basebox.h < minH) {
+        this.adaptor.setStyle(base, 'paddingTop', this.em(minH - basebox.h));
+        basebox.h = minH;
+      }
+    }
   }
 
 }

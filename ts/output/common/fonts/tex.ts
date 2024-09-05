@@ -1,6 +1,6 @@
 /*************************************************************
  *
- *  Copyright (c) 2017 The MathJax Consortium
+ *  Copyright (c) 2017-2022 The MathJax Consortium
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,6 +41,11 @@ export function CommonTeXFontMixin<
   return class extends Base {
 
     /**
+     * @override
+     */
+    public static NAME = 'TeX';
+
+    /**
      *  Add the extra variants for the TeX fonts
      */
     protected static defaultVariants = [
@@ -76,7 +81,12 @@ export function CommonTeXFontMixin<
     /**
      *  The default variants for the standard stretchy sizes
      */
-    protected static defaultSizeVariants = ['normal', '-smallop', '-largeop', '-size3', '-size4'];
+    protected static defaultSizeVariants = ['normal', '-smallop', '-largeop', '-size3', '-size4', '-tex-variant'];
+
+    /**
+     *  The default variants for the standard stretchy assmebly parts
+     */
+    protected static defaultStretchVariants = ['-size4'];
 
     /**
      * @override
